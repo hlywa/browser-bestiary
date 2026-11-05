@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browser Bestiary</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
+  <script src="sketch.js?v=12" defer></script>
+  <style>
+:root {
+  --bg: #050505;
+  --fg: #f2f0e8;
+  --muted: #9f9a8f;
+  --panel: #111;
+  --paper: #161616;
+  --ink: #f2f0e8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Georgia, serif;
+  text-align: center;
+  overflow-x: hidden;
+}
+main { padding: 48px 20px 140px; min-height: 100vh; }
+h1 { font-size: clamp(32px, 4vw, 48px); font-weight: normal; letter-spacing: .04em; margin: 0 0 16px; }
+.subtitle { color: var(--muted); font-style: italic; font-size: 20px; margin-bottom: 36px; }
+#sketch-container { margin: 0 auto; max-width: 1000px; min-height: 420px; }
+canvas { display: block; margin: auto; max-width: 100%; height: auto !important; }
+.hint { margin-top: 28px; color: var(--muted); font-style: italic; font-size: 16px; }
+#bestiary-toggle {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 72px;
+  height: 72px;
+  border: 1px solid rgba(242,240,232,.35);
+  background: rgba(255,255,255,.02);
+  color: var(--fg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; z-index: 20;
+}
+#bestiary-toggle:hover, #bestiary-toggle:focus-visible { background: rgba(255,255,255,.1); }
+.book-label { font-size: 12px; font-style: italic; opacity: .85; }
+#bestiary-panel {
+  position: fixed;
+  left: 0; bottom: 0; width: 100%;
+  height: 43vh; min-height: 340px;
+  background: var(--panel);
+  border-top: 1px solid rgba(242,240,232,.18);
+  transform: translateY(100%);
+  visibility: hidden;
+  transition: transform .3s ease, visibility .3s;
+  z-index: 30;
+}
+#bestiary-panel.open { transform: translateY(0); visibility: visible; }
+.panel-inner { max-width: 1200px; height: 100%; margin: 0 auto; padding: 16px 24px 24px; display: flex; flex-direction: column; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.panel-title { font-size: 22px; letter-spacing: .04em; }
+#close-panel { border: none; background: transparent; color: var(--fg); font-size: 28px; cursor: pointer; }
+.tabs { display: flex; gap: 8px; justify-content: flex-start; margin-bottom: 12px; }
+.tab { background: transparent; color: var(--fg); border: 1px solid rgba(242,240,232,.25); padding: 9px 16px; cursor: pointer; font-family: Georgia, serif; font-size: 15px; }
+.tab.active { background: rgba(242,240,232,.12); }
+.tab-content { display: none; min-height: 0; flex: 1; }
+.tab-content.active { display: block; }
+.book-page { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; background: var(--paper); color: var(--ink); height: 100%; overflow-y: auto; padding: 22px; text-align: left; border: 1px solid rgba(242,240,232,.17); }
+.book-page.single-page { grid-template-columns: 1fr; }
+.page-column { display: flex; flex-direction: column; gap: 9px; }
+.book-page h2 { margin: 0 0 4px; font-size: 22px; font-weight: normal; }
+.book-page p, .book-page label { color: var(--ink); font-size: 15px; }
+.book-page p { margin: 4px 0 10px; }
+textarea, select { width: 100%; border: 1px solid #555; background: #222; color: var(--ink); padding: 10px; font-family: Georgia, serif; font-size: 14px; }
+#record-entry { margin-top: 8px; align-self: flex-start; background: #eeeae2; color: #111; border: 1px solid #eeeae2; padding: 10px 16px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; }
+#record-entry:hover { opacity: .9; }
+.record-message { font-size: 13px !important; font-style: italic; }
+.entry-card { border-top: 1px solid #454545; padding: 12px 0; }
+.entry-card:first-child { border-top: none; }
+.entry-card h3 { margin: 0 0 6px; font-size: 18px; font-weight: normal; }
+.entry-card p { margin: 4px 0; font-size: 14px; overflow-wrap: anywhere; }
+.empty-state { opacity: .7; }
+@media(max-width: 700px) {
+  .subtitle { font-size: 16px; }
+  #bestiary-toggle { width: 58px; height: 58px; left: 10px; top: 48%; }
+  #bestiary-panel { height: 70vh; }
+  .panel-inner { padding: 12px; }
+  .book-page { grid-template-columns: 1fr; padding: 16px; }
+}
+
+/* Monochrome bestiary controls */
+textarea::placeholder { color: #999; }
+select option { background: #222; color: #f2f0e8; }
+#record-entry:hover { background: #fff; opacity: 1; }
+.tab:focus-visible, #record-entry:focus-visible, textarea:focus-visible, select:focus-visible { outline: 1px solid #eeeae2; outline-offset: 2px; }
+
+
+/* First field experiment. Keeps the existing monochrome composition. */
+#field-measurement { flex-basis:100%; color:#c6c1b8; font-size:12px; letter-spacing:.025em; }
+#field-tools {
+  width: min(100%, 1000px);
+  margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 10px 14px;
+  font-size: 14px;
+}
+#field-tools button, #next-sighting {
+  border: 1px solid #666; background: #111; color: #f2f0e8;
+  font: inherit; padding: 10px 14px; cursor: pointer;
+}
+#field-tools button:hover, #next-sighting:hover { background: #262626; }
+#field-tools button:focus-visible, #next-sighting:focus-visible {
+  outline: 2px solid white; outline-offset: 3px;
+}
+#sighting-label { color: #aaa; font-size: 13px; font-style: italic; }
+#experiment-status {
+  flex-basis: 100%; min-height: 18px;
+  color: #a8a8a8; font-size: 13px; font-style: italic;
+}
+#field-tools button:disabled { opacity: .4; cursor: default; }
+.poem-row { display: flex; flex-direction: column; gap: 6px; }
+.poem-row label { font-style: italic; font-size: 16px; }
+#poem-instruction { font-style: italic; color: #bbb; }
+#record-message { min-height: 20px; }
+#entries-list { padding-bottom: 10px; }
+.entry-card .poem-line { font-style: italic; }
+#next-sighting { margin-top: 12px; }
+@media (max-width: 700px) {
+  #field-tools { padding: 0 12px; }
+  #field-tools button { font-size: 12px; }
+}
+
+/* Playtest pass: keep experiments reachable while the journal is open. */
+body:has(#bestiary-panel.open) #field-tools {
+  position: fixed; z-index: 32;
+  bottom: max(43vh, 340px); left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 1000px);
+  padding: 9px 12px; background: #101010;
+  border: 1px solid #444; border-bottom: 0;
+}
+body:has(#bestiary-panel.open) #field-measurement,
+body:has(#bestiary-panel.open) #experiment-status { display: none; }
+body:has(#bestiary-panel.open) #bestiary-toggle { z-index: 33; }
+#poem-one[data-check="correct"], #poem-two[data-check="correct"], #poem-three[data-check="correct"] {
+  border: 1px solid #c9d9cc;
+}
+#poem-one[data-check="wrong"], #poem-two[data-check="wrong"], #poem-three[data-check="wrong"] {
+  border: 1px dashed #d9b89b;
+}
+.poem-feedback { min-height: 15px; font: italic 12px Georgia, serif; color: #c9c5bd; }
+#record-entry[data-result="wrong"] { background: #38302b; color: #f2f0e8; border-color: #b6a08a; }
+#record-entry[data-result="correct"] { background: #d5e4d7; color: #111; border-color: #d5e4d7; }
+#field-tools .field-legend { flex-basis:100%; font-size: 12px; color: #999; font-style: italic; }
+#debug-panel { position: fixed; top: 12px; right: 12px; z-index: 100;
+  max-width: 310px; border: 1px solid #999; background: #111; color: #eee;
+  padding: 14px; text-align:left; font: 12px/1.55 monospace; white-space: pre-line;
+}
+#debug-panel[hidden] { display:none; }
+@media (max-width:700px) {
+  body:has(#bestiary-panel.open) #field-tools { bottom:70vh; padding:5px; gap:5px; }
+  body:has(#bestiary-panel.open) #field-tools button { padding:5px 6px; font-size:11px; }
+}
+
+/* Open-book layout, playtest revision: unobstructed clearing + readable journal. */
+#bestiary-panel {
+  height: 56dvh;
+  min-height: 440px;
+  max-height: calc(100dvh - 145px);
+}
+.panel-inner { padding: 14px 24px 18px; min-height: 0; }
+.panel-header { margin-bottom: 8px; flex: 0 0 auto; }
+.tabs { margin-bottom: 9px; flex: 0 0 auto; }
+.tab-content.active { display: flex; flex-direction: column; min-height: 0; }
+.book-page {
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 22px;
+  gap: 26px;
+}
+.page-column { gap: 5px; min-width: 0; }
+.book-page h2 { font-size: 21px; margin: 0 0 6px; }
+.book-page p { margin: 2px 0 7px; }
+.poem-row { gap: 3px; }
+.poem-row label { font-size: 15px; }
+.poem-feedback { min-height: 0; }
+.poem-feedback:empty { display: none; }
+#observation-notes { min-height: 72px; max-height: 140px; resize: vertical; }
+#record-entry { margin-top: 8px; }
+#record-message { margin: 3px 0 0; min-height: 0; }
+body:has(#bestiary-panel.open) #field-tools {
+  position: fixed;
+  bottom: min(56dvh, calc(100dvh - 145px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100% - 32px, 910px);
+  z-index: 32;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 10px;
+  background: #0d0d0d;
+  border: 1px solid #393939;
+  border-bottom: 0;
+}
+body:has(#bestiary-panel.open) #sighting-label {
+  flex: 0 1 auto;
+  margin-right: 9px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+body:has(#bestiary-panel.open) #field-tools button {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+body:has(#bestiary-panel.open) #field-tools .field-legend,
+body:has(#bestiary-panel.open) #experiment-status,
+body:has(#bestiary-panel.open) #field-measurement { display: none; }
+@media (max-width: 760px) {
+  #bestiary-panel { height: 67dvh; min-height: 0; max-height: calc(100dvh - 130px); }
+  .panel-inner { padding: 10px 12px 14px; }
+  .book-page { grid-template-columns: 1fr; padding: 14px; gap: 18px; }
+  body:has(#bestiary-panel.open) #field-tools {
+    bottom: min(67dvh, calc(100dvh - 130px));
+    width: calc(100% - 12px);
+    padding: 6px;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  body:has(#bestiary-panel.open) #sighting-label {
+    flex-basis: 100%;
+    margin: 0;
+    text-align: center;
+  }
+  body:has(#bestiary-panel.open) #field-tools button { padding: 5px 6px; font-size: 11px; }
+}
+
+
+/* Three deliberate states: arrival, active observation, and open journal. */
+#start-screen {
+  position: fixed; inset: 0; z-index: 200;
+  display: grid; place-items: center;
+  background: #050505; color: #f2f0e8;
+  padding: 24px;
+}
+.start-content { width: min(92vw,720px); }
+.start-content h1 {
+  font-size: clamp(46px, 6vw, 76px); letter-spacing:.04em; line-height:1.12;
+  margin: 0 0 15px; font-weight: normal;
+}
+.start-mark { font-size: 22px; color:#aaa; margin:0 0 26px; }
+.start-subtitle { color:#a8a39b; font-size:clamp(16px,2vw,23px); font-style:italic; margin:0 0 80px; }
+.start-whisper { color:#aaa; font-style:italic; font-size:16px; margin:0 0 26px; }
+#start-game {
+  border:1px solid #aaa; color:#f2f0e8; background:transparent;
+  padding:13px 27px; font:18px Georgia,serif; cursor:pointer;
+}
+#start-game:hover,#start-game:focus-visible { background:#222; outline-offset:4px; }
+body.started #start-screen { display:none; }
+body:not(.started) main,body:not(.started) #bestiary-toggle { visibility:hidden; }
+
+body.started main {
+  height:100dvh; min-height:0; padding:0;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+#game-header {
+  flex:0 0 48px; min-height:48px;
+  padding:0 100px 0 24px; display:flex; align-items:center;
+  justify-content:flex-start; gap:16px; text-align:left;
+  border-bottom:1px solid #252525;
+}
+#game-header h1 { font:normal 19px Georgia,serif; letter-spacing:.035em; margin:0; }
+#game-subtitle { color:#888; font-size:12px; font-style:italic; white-space:nowrap; }
+#field-tools {
+  flex:0 0 auto;
+  width:100%; max-width:none; margin:0;
+  min-height:51px; padding:7px 95px 7px 24px;
+  display:flex; flex-wrap:nowrap; align-items:center; justify-content:flex-start;
+  gap:8px; border-bottom:1px solid #303030;
+  background:#0b0b0b;
+}
+#field-tools button { padding:7px 10px; font-size:12px; white-space:nowrap; }
+#sighting-label { flex:0 0 auto; white-space:nowrap; margin-right:10px; font-size:12px; }
+#field-tools .field-legend,#experiment-status,#field-measurement { display:none; }
+#field-tools button:first-of-type { margin-left:0; }
+#sketch-container {
+  flex:1 1 auto; min-height:0; width:100%; max-width:none;
+  padding:8px 16px; display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+#sketch-container canvas {
+  width:auto !important; height:auto !important;
+  max-width:100%; max-height:100%; object-fit:contain; margin:auto;
+}
+.hint { display:none; }
+#bestiary-toggle {
+  left:auto; top:4px; right:20px; transform:none;
+  height:40px; width:51px; gap:0; z-index:36; border-color:#424242;
+}
+#bestiary-toggle .book-icon { width:20px; height:20px; }
+#bestiary-toggle .book-label { font-size:10px; }
+#bestiary-panel { height:52dvh; min-height:0; max-height:calc(100dvh - 130px); }
+body:has(#bestiary-panel.open) #field-tools {
+  position:static; transform:none; left:auto; bottom:auto;
+  width:100%; max-width:none; z-index:auto;
+  padding:7px 95px 7px 24px; border:0; border-bottom:1px solid #303030;
+  display:flex; flex-wrap:nowrap; gap:8px;
+  background:#0b0b0b;
+}
+body:has(#bestiary-panel.open) #sighting-label { font-size:12px; flex:0 0 auto; margin:0 10px 0 0; }
+body:has(#bestiary-panel.open) #field-tools button { padding:7px 10px; font-size:12px; }
+body:has(#bestiary-panel.open) #sketch-container {
+  flex:0 1 auto;
+  height:calc(48dvh - 105px); min-height:75px;
+  transition:height .25s ease;
+}
+@media(max-width:760px) {
+  #game-header { padding:0 70px 0 12px; }
+  #game-header h1 { font-size:16px; }
+  #game-subtitle { display:none; }
+  #field-tools,body:has(#bestiary-panel.open) #field-tools {
+    padding:5px 68px 5px 10px; flex-wrap:wrap; gap:4px;
+  }
+  #sighting-label,body:has(#bestiary-panel.open) #sighting-label {
+    flex-basis:100%; margin:0; font-size:11px;
+  }
+  #field-tools button,body:has(#bestiary-panel.open) #field-tools button {
+    font-size:11px; padding:5px;
+  }
+  #bestiary-toggle { right:10px; top:4px; }
+  #bestiary-panel { height:62dvh; max-height:calc(100dvh - 140px); }
+  body:has(#bestiary-panel.open) #sketch-container {
+    height:calc(38dvh - 135px); min-height:60px;
+  }
+}
+
+
+/* Thin book pass: a compact lower-third field journal. */
+#bestiary-panel {
+  height: 40dvh;
+  min-height: 290px;
+  max-height: 420px;
+}
+.panel-inner {
+  padding: 10px 20px 12px;
+}
+.panel-header {
+  margin-bottom: 5px;
+  min-height: 25px;
+}
+.panel-title {
+  font-size: 19px;
+  line-height: 1.1;
+}
+#close-panel {
+  font-size: 23px;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+.tabs {
+  margin-bottom: 7px;
+  gap: 7px;
+}
+.tab {
+  font-size: 13px;
+  padding: 5px 11px;
+  line-height: 1.15;
+}
+.book-page {
+  padding: 12px 16px;
+  gap: 20px;
+  align-content: start;
+}
+.page-column { gap: 3px; }
+.book-page h2 {
+  font-size: 19px;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+.book-page p { margin: 2px 0 5px; line-height: 1.28; }
+.book-page p, .book-page label { font-size: 13px; }
+.poem-row { gap: 2px; }
+.poem-row label { font-size: 14px; }
+.poem-row select { padding: 7px 9px; font-size: 13px; }
+#observation-notes {
+  min-height: 65px;
+  height: 72px;
+  max-height: 110px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+#record-entry { margin-top: 6px; padding: 8px 12px; font-size: 13px; }
+body:has(#bestiary-panel.open) #sketch-container {
+  height: calc(100dvh - min(40dvh, 420px) - 110px);
+  min-height: 85px;
+}
+@media (max-width:760px) {
+  #bestiary-panel {
+    height: 55dvh;
+    min-height: 0;
+    max-height: none;
+  }
+  .panel-inner { padding: 9px 12px 12px; }
+  .book-page { padding: 12px; gap: 12px; }
+  body:has(#bestiary-panel.open) #sketch-container {
+    height: calc(45dvh - 140px);
+    min-height: 55px;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div id="start-screen" role="dialog" aria-modal="true" aria-labelledby="start-title">
+    <div class="start-content">
+      <p class="start-mark" aria-hidden="true">◦ · ✳ · ◦</p>
+      <h1 id="start-title">browser bestiary</h1>
+      <p class="start-subtitle">an incomplete record of things found living here</p>
+      <p class="start-whisper">Some things are easier to observe than to know.</p>
+      <button id="start-game" type="button">enter the clearing</button>
+    </div>
+  </div>
+  <main>
+    <header id="game-header">
+      <h1>browser bestiary</h1>
+      <span id="game-subtitle">an incomplete record of things found living here</span>
+    </header>
+    <div id="field-tools" aria-label="Field experiments">
+      <span id="sighting-label">field study no. 001</span>
+      <span class="field-legend">the pale hollow is a place in the clearing. Move it to test what the inhabitants notice.</span>
+      <button id="move-habitat" type="button">move the pale hollow</button>
+      <button id="divide-agents" type="button">disturb the gathering</button>
+      <button id="repeat-trial" type="button">repeat observation</button>
+      <span id="experiment-status" aria-live="polite">Two explanations may produce the same gathering. Experiment before writing.</span>
+      <span id="field-measurement" aria-live="off">field reading · no observations yet</span>
+    </div>
+    <div id="sketch-container"></div>
+    <p class="hint">observe quietly. something may appear.</p>
+  </main>
+
+  <button id="bestiary-toggle" aria-label="Open bestiary" aria-controls="bestiary-panel" aria-expanded="false">
+    <svg class="book-icon" viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true">
+      <path d="M16 8 C11 5 7 6 3 8 V24 C7 22 11 22 16 25 C21 22 25 22 29 24 V8 C25 6 21 5 16 8Z"/>
+      <path d="M16 8 V25"/>
+    </svg>
+    <span class="book-label">book</span>
+  </button>
+
+  <section id="bestiary-panel" aria-label="Bestiary" aria-hidden="true">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <div class="panel-title">bestiary</div>
+        <button id="close-panel" aria-label="Close bestiary">×</button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Bestiary pages">
+        <button class="tab active" type="button" data-tab="guessing" role="tab" aria-selected="true">guessing</button>
+        <button class="tab" type="button" data-tab="entries" role="tab" aria-selected="false">recorded entries</button>
+      </div>
+      <div class="tab-content active" id="guessing-tab" role="tabpanel">
+        <div class="book-page">
+          <div class="page-column">
+            <h2>current sighting</h2>
+            <p id="creature-status">An encounter is forming.</p>
+            <p id="poem-instruction">Watch the gathering. Change something in the clearing, then compose an account of what you saw.</p>
+            <label for="observation-notes">field notes (optional)</label>
+            <textarea id="observation-notes" rows="4" placeholder="When I moved the hollow, they..."></textarea>
+          </div>
+          <div class="page-column">
+            <h2>unfinished field poem</h2>
+            <div class="poem-row">
+              <label for="poem-one">I. They are found...</label>
+              <select id="poem-one">
+                <option value="">complete this line...</option>
+                <option value="habitat">lingering where the pale ground is kind</option>
+                <option value="social">turning toward their wandering companions</option>
+                <option value="random">in exactly equal numbers everywhere</option>
+              </select>
+              <span id="feedback-one" class="poem-feedback" aria-live="polite"></span>
+            </div>
+            <div class="poem-row">
+              <label for="poem-two">II. When the world is changed...</label>
+              <select id="poem-two">
+                <option value="">complete this line...</option>
+                <option value="habitat">their lingering follows the hollow</option>
+                <option value="social">the scattered ones turn back toward each other</option>
+                <option value="random">they stand perfectly still</option>
+              </select>
+              <span id="feedback-two" class="poem-feedback" aria-live="polite"></span>
+            </div>
+            <div class="poem-row">
+              <label for="poem-three">III. What binds them is...</label>
+              <select id="poem-three">
+                <option value="">complete this line...</option>
+                <option value="habitat">a place, not knowledge of one another</option>
+                <option value="social">the presence of another moving body</option>
+                <option value="random">a common command from above</option>
+              </select>
+              <span id="feedback-three" class="poem-feedback" aria-live="polite"></span>
+            </div>
+            <button id="record-entry" type="button">complete the field poem</button>
+            <p id="record-message" class="record-message" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="entries-tab" role="tabpanel">
+        <div class="book-page single-page">
+          <div>
+            <h2>recorded entries</h2>
+            <div id="entries-list"><p class="empty-state">No entries recorded yet.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <aside id="debug-panel" hidden aria-label="Developer information"></aside>
+</body>
+</html>
