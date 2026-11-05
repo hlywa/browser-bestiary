@@ -15,11 +15,16 @@ The larger artistic and research question: **Can playful, poetic observation hel
 
 ### Current state
 
-Early playable prototype, not a finished five-species ecology. The first encounters compare environmental dwell time and neighbor attraction. **The fourth encounter now mixes Edglings and two Howlers in a preliminary predator-prey simulation**, with hunger, pursuit, brief prey disappearance and a visual howl that can be silenced. The **third encounter** now gives Afterlings a distinct fading-trace field and locally responsive trail-following behavior, with an erase-traces experiment. Hushlings and Manyones still lack independent behavior systems. The bestiary now stores optional first impressions, predictions and revised notes; recorded entries include tiny species drawings. Research claims and limitations are documented separately.
+Early playable prototype, not a finished five-species ecology. The first encounters compare environmental dwell time and neighbor attraction. **The fourth encounter now mixes Edglings and two Howlers in a preliminary predator-prey simulation**, with hunger, pursuit, brief prey disappearance and a visual howl that can be silenced. The **third encounter** now gives Afterlings a distinct diffusing and fading trace field and locally responsive trail-following behavior, with an erase-traces experiment. Hushlings and Manyones still lack independent behavior systems. The bestiary now stores optional first impressions, predictions and revised notes; recorded entries include tiny species drawings. Research claims and limitations are documented separately.
 
 ### Repository
 
-- [sketch.js](sketch.js) — p5.js agents, movement rules, experiment controls and inference logic.
+- [sketch.js](sketch.js) — startup, fixed-step clock, encounter state, and UI event wiring.
+- [js/environment.js](js/environment.js) — habitat and Afterling trace grid, including local diffusion and evaporation.
+- [js/creatures.js](js/creatures.js) — creature sensing, movement, Howler predation, and field glyphs.
+- [js/experiments.js](js/experiments.js) — interventions and observational measurements.
+- [js/bestiary.js](js/bestiary.js) — poem validation, recorded entries, replay cursor, and local storage.
+- [tests/simulation.test.js](tests/simulation.test.js) — dependency-free checks of shared scripts and local diffusion. Run with `node tests/simulation.test.js`.
 - [index.html](index.html) and [style.css](style.css) — browser interface and visual composition.
 - [docs/DESIGN.md](docs/DESIGN.md) and [docs/RESEARCH.md](docs/RESEARCH.md) — living creative and scholarly documentation.
 

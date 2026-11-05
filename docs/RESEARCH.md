@@ -110,6 +110,24 @@ This is a new *implemented experimental mechanism*, **not** evidence of robust e
 
 ---
 
+## Research-method decision: CA, agent worlds, and future evolution — 5 November 2026
+
+*Status: implementation and proposed experiment are distinct from results. Do not treat this section as a novelty claim.*
+
+**Question guiding the first extension:** If environmental marks spread and decay across neighboring cells, how does this change the paths available to a trace-sensing organism and what differences can an observer infer through intervention?
+
+The Afterling's trace-field array already represented continuous local environmental state. The new local-neighborhood diffusion rule makes its dynamics closer to a **continuous-state cellular automaton** or explicit grid-based diffusion scheme. Agents then perceive and modify this shared field. The organism's sensory-world constraints are implemented in the agent code; the changing field is a separate dynamical layer.
+
+**Baseline vs. variant:** compare no diffusion (existing per-cell decay) with controlled diffusion at fixed decay, deposition, starting paths, random seeds and number of agents. Measure marked area, path width, trace persistence, trajectory reuse and response after erasure. The reference scenario starts with *authored* paths, so do not attribute those initial routes to emergence. Compare both authored initialization and blank-start conditions eventually.
+
+**GA + CA is established prior art, not a required next step.** A genetic algorithm can evolve an automaton's local rule table or parameters across generations. Mitchell, Crutchfield and Hraber, “Evolving Cellular Automata to Perform Computations: Mechanisms and Impediments,” *Physica D* 75 (1994), 361–391, [DOI](https://doi.org/10.1016/0167-2789(94)90293-3), is a direct example. Mordvintsev, Randazzo, Niklasson and Levin's [“Growing Neural Cellular Automata”](https://distill.pub/2020/growing-ca/) (2020) uses **differentiable learned update rules**, not standard genetic selection; the distinction matters.
+
+**Evolutionary question for later:** If sensors or response strategies vary heritably under costs and ecological selection, which strategies persist in a world with diffusing traces and competing organisms? That requires an explicit genotype, reproduction, variation, actual selection and interpretable measurements. Adjusting diffusion or repeatedly rerolling random agent positions is **not evolution**.
+
+**Scholarly limits:** CA-based environmental spread alone is not a new ALife mechanism. The research opportunity, if supported by future evidence, lies in what a playable interface reveals about the differences among what the world contains, what an organism can detect, and what an observer infers. Full literature comparison and participant evidence remain outstanding.
+
+---
+
 ## 2. What is presently being tested
 
 **Mechanism A, local habitat preference:** 24 agents wander; motion slows sharply within a circular favored patch. Their sensor is local membership in the patch; they do not navigate toward it or identify companions. Clustering can arise through greater dwell time.

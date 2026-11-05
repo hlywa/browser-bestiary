@@ -217,8 +217,8 @@ The last line is a poetic conjecture about inner life. Its exact subjectivity is
 
 ## 8. Playtest and revision notebook (folded into design)
 
-### First formative session — November 2026, conversational transcript
-**Observed, not measured:** Tester liked orientation of the glyphs and found the poem choices suggestive. Tester misunderstood the pale hollow, formed unsupported social/timer theories, disliked blocked controls and lack of feedback, and requested a developer answer key. The interaction showed that **poem text can cue observation**. It does not show that the game improved understanding or that the puzzle is calibrated. No participant metrics collected.
+### Formative interface evaluation — November 2026
+**Informal, non-systematic observation:** A tester liked the orientation of the glyphs and found the poem choices suggestive. Tester misunderstood the pale hollow, formed unsupported social/timer theories, disliked blocked controls and lack of feedback, and requested a developer answer key. The interaction showed that **poem text can cue observation**. It does not show that the game improved understanding or that the puzzle is calibrated. No participant metrics collected.
 
 **Changes implemented afterward:** click-away and closeable book, persistent field controls, line feedback, debug panel with answer texts, removal of intervention gate, start screen with small persistent title, lower book height. Subsequent screenshots confirmed meaningful portions of the revised UI but also exposed spacing and usability limitations.
 
@@ -286,7 +286,7 @@ The last line is a poetic conjecture about inner life. Its exact subjectivity is
 
 ## 9. Visual and production references
 - [Spore / GDC 2010: Stone Librande, “One-Page Designs”](https://www.gdcvault.com/play/1012356/One-Page%E2%80%8B): concise documentation from Maxis, not a claim that Wright gave this specific talk.
-- [The Nature of Code](https://natureofcode.com/): movement, steering, force and eventually complex behavior.
+- [The Nature of Code](https://natureofcode.com/): reference for movement, steering, forces, and agent-based systems.
 - [p5.js reference](https://p5js.org/reference/): browser implementation vocabulary.
 - [NetLogo Models Library](https://ccl.northwestern.edu/netlogo/models/): experimental prior art and comparison, not required runtime.
 - [Research notes and annotated bibliography](RESEARCH.md): theoretical claims, academic precedents and reading progress.
@@ -305,6 +305,23 @@ The last line is a poetic conjecture about inner life. Its exact subjectivity is
 
 The separation is important for research: replaying an experiment need not destroy its previous field records. Replaying and submitting again can yield multiple field entries with the same study number, intentionally preserving repeat observations rather than overwriting them.
 
+
+---
+
+## Technical architecture — 5 November 2026
+
+The browser simulation uses ordinary JavaScript with p5.js for rendering. The code is separated by responsibility:
+
+- `sketch.js`: shared encounter state, startup, fixed-step simulation clock, UI wiring.
+- `js/environment.js`: spatial fields, trace deposition, local diffusion and decay.
+- `js/creatures.js`: agent behavior, sensor-response rules, predator-prey interactions, glyph drawing.
+- `js/experiments.js`: field interventions and observational measurements.
+- `js/bestiary.js`: field poems, validation, saved entries and encounter navigation.
+- `tests/simulation.test.js`: dependency-free JavaScript smoke tests.
+
+The scripts currently share browser-global state; the modules separate responsibilities without requiring a bundler. Their interface and internal state should be further isolated where it improves repeatability and testing.
+
+The Afterling environmental grid uses a five-point local stencil to diffuse continuous trace intensity across neighboring cells while retaining a separate decay term. This is a continuous-state local grid update, not classical binary cellular automata or genetic evolution. The system's experimental validity depends on controlled comparisons, measurement, and reproducible runs.
 
 ---
 

@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Browser Bestiary</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
-  <script src="sketch.js?v=20" defer></script>
+  <!-- Ordered classic scripts share the existing p5 global-mode state. No bundler required. -->
+  <script src="js/environment.js?v=2" defer></script>
+  <script src="js/creatures.js?v=1" defer></script>
+  <script src="js/experiments.js?v=1" defer></script>
+  <script src="js/bestiary.js?v=1" defer></script>
+  <script src="sketch.js?v=22" defer></script>
   <style>
 :root {
   --bg: #050505;
