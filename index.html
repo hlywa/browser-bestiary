@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Browser Bestiary</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
-  <script src="sketch.js?v=12" defer></script>
+  <script src="sketch.js?v=20" defer></script>
   <style>
 :root {
   --bg: #050505;
@@ -418,6 +418,38 @@ body:has(#bestiary-panel.open) #sketch-container {
   }
 }
 
+/* The next study is an action in the field, never in the recorded book. */
+#field-navigation { display:inline-flex; align-items:center; margin:0; }
+#next-encounter { color:var(--fg); background:#242424; border:1px solid #999; font:13px Georgia,serif; padding:7px 12px; cursor:pointer; white-space:nowrap; }
+#next-encounter:hover,#next-encounter:focus-visible { background:#333; }
+#next-encounter[hidden], #silence-howl[hidden], #erase-traces[hidden], #move-habitat[hidden] { display:none !important; }
+.entry-card { display:flex; align-items:flex-start; gap:14px; }
+.entry-portrait { display:block; flex:0 0 64px; width:64px; height:54px; border:1px solid #393939; background:#080808; }
+.entry-copy { flex:1; min-width:0; }
+#field-prediction,#revised-notes { width:100%; background:#222; color:#f2f0e8; border:1px solid #555; font:13px Georgia,serif; padding:6px 9px; }
+#field-prediction { height:29px; }
+#revised-notes { height:39px; min-height:39px; resize:vertical; }
+#observation-notes { height:42px; min-height:42px; }
+.page-column label { display:block; }
+#next-encounter:focus-visible { outline:2px solid #eee; outline-offset:3px; }
+/* Replay is a navigation action, visible at the edge of the field toolbar. */
+#field-tools #replay-from-start {
+  margin-left:auto;
+  border-color:#595959;
+  color:#c6c1b8;
+  padding:7px 11px;
+  font-size:12px;
+}
+#field-tools #replay-from-start:hover,
+#field-tools #replay-from-start:focus-visible { background:#242424; color:#fff; }
+@media (max-width:760px) {
+  #field-tools #replay-from-start { margin-left:0; padding:5px 7px; }
+}
+/* Development-friendly replay control, deliberately separate from progression. */
+.replay-controls { display:flex; align-items:center; flex-wrap:wrap; gap:7px 12px; padding:7px 0 12px; margin-bottom:5px; border-bottom:1px solid #303030; }
+#restart-studies { border:1px solid #666; background:transparent; color:#e0ddd5; font:13px Georgia,serif; padding:7px 12px; cursor:pointer; }
+#restart-studies:hover,#restart-studies:focus-visible { background:#292929; }
+#restart-help { color:#aaa; font-size:12px; font-style:italic; margin:0; }
   </style>
 </head>
 <body>
@@ -440,7 +472,11 @@ body:has(#bestiary-panel.open) #sketch-container {
       <span class="field-legend">the pale hollow is a place in the clearing. Move it to test what the inhabitants notice.</span>
       <button id="move-habitat" type="button">move the pale hollow</button>
       <button id="divide-agents" type="button">disturb the gathering</button>
+      <button id="erase-traces" type="button" hidden>erase the traces</button>
+      <button id="silence-howl" type="button" hidden>silence the howl</button>
       <button id="repeat-trial" type="button">repeat observation</button>
+      <button id="replay-from-start" type="button" title="Replay the first encounter without deleting saved poems">↺ restart at 001</button>
+      <div id="field-navigation"><button id="next-encounter" type="button" hidden>next encounter →</button></div>
       <span id="experiment-status" aria-live="polite">Two explanations may produce the same gathering. Experiment before writing.</span>
       <span id="field-measurement" aria-live="off">field reading · no observations yet</span>
     </div>
@@ -472,8 +508,12 @@ body:has(#bestiary-panel.open) #sketch-container {
             <h2>current sighting</h2>
             <p id="creature-status">An encounter is forming.</p>
             <p id="poem-instruction">Watch the gathering. Change something in the clearing, then compose an account of what you saw.</p>
-            <label for="observation-notes">field notes (optional)</label>
-            <textarea id="observation-notes" rows="4" placeholder="When I moved the hollow, they..."></textarea>
+            <label for="observation-notes">first impression (optional)</label>
+            <textarea id="observation-notes" rows="2" placeholder="Before I changed anything, I thought..."></textarea>
+            <label for="field-prediction">prediction (optional)</label>
+            <input id="field-prediction" type="text" placeholder="If I disturb the clearing, I expect...">
+            <label for="revised-notes">after observing (optional)</label>
+            <textarea id="revised-notes" rows="2" placeholder="Now I think..."></textarea>
           </div>
           <div class="page-column">
             <h2>unfinished field poem</h2>
@@ -516,6 +556,10 @@ body:has(#bestiary-panel.open) #sketch-container {
         <div class="book-page single-page">
           <div>
             <h2>recorded entries</h2>
+            <div class="replay-controls" aria-label="Playtest controls">
+              <button id="restart-studies" type="button">erase saved entries</button>
+              <p id="restart-help">Erasing permanently clears saved poems on this browser.</p>
+            </div>
             <div id="entries-list"><p class="empty-state">No entries recorded yet.</p></div>
           </div>
         </div>
